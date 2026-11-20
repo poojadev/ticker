@@ -149,8 +149,9 @@ class _Seed {
   final String sector;
 }
 
-// Fictional companies — no real tickers, so nobody mistakes demo data for
-// market data.
+// 50 fictional companies — no real tickers, so nobody mistakes demo data for
+// market data. Asking for more than 50 (--symbols 100) reuses them with a
+// numeric suffix (NOVA2, KITE2, ...).
 const _seeds = <_Seed>[
   _Seed('NOVA', 'Nova Robotics', 'Tech'),
   _Seed('KITE', 'Kite Aerospace', 'Industrials'),
@@ -192,4 +193,14 @@ const _seeds = <_Seed>[
   _Seed('CYAN', 'Cyan Water', 'Utilities'),
   _Seed('DRFT', 'Drift Mobility', 'Consumer'),
   _Seed('EMBR', 'Ember Steel', 'Materials'),
+  _Seed('FLUX', 'Flux Batteries', 'Energy'),
+  _Seed('GRID', 'Gridline Utilities', 'Utilities'),
+  _Seed('HELM', 'Helm Marine', 'Industrials'),
+  _Seed('INKY', 'Inkwell Publishing', 'Communication'),
+  _Seed('JUNO', 'Juno Space Systems', 'Industrials'),
+  _Seed('KELP', 'Kelp Ocean Farms', 'Consumer'),
+  _Seed('LOOM', 'Loom Textiles', 'Consumer'),
+  _Seed('MINT', 'Mint Lending', 'Finance'),
+  _Seed('NEST', 'Nest Property Trust', 'Real Estate'),
+  _Seed('ONYX', 'Onyx Chemicals', 'Materials'),
 ];

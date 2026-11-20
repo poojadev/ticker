@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 class TickerTheme {
   static const up = Color(0xFF2ECC71);

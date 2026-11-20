@@ -20,6 +20,10 @@ final class WatchlistState extends Equatable {
 
   final String? error;
 
+  /// Copies the state, replacing only the fields you pass.
+  ///
+  /// `error` is the exception: it is NOT carried over. An error belongs only
+  /// to the state that failed, so after a Retry the message disappears.
   WatchlistState copyWith({
     WatchlistStatus? status,
     List<String>? symbols,
@@ -30,7 +34,7 @@ final class WatchlistState extends Equatable {
       status: status ?? this.status,
       symbols: symbols ?? this.symbols,
       quotes: quotes ?? this.quotes,
-      error: error ?? this.error,
+      error: error,
     );
   }
 

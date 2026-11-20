@@ -86,7 +86,7 @@ The cost that matters is build, layout and paint, not the comparison.
 
 1. `cd server && dart run bin/server.dart --hz 4` (a faster tick makes the flashing obvious)
 2. `cd app && flutter run` (**debug mode**, since the churn tracker hooks a debug-only callback)
-3. Wait 10s on the watchlist, then tap the report icon → note `deadRebuilds` in the console
+3. Wait 10s on the watchlist, then tap the report icon → note `rebuilds.dead` in the console JSON
 4. Make the fix (type it live, or cut to the diff)
 5. Hot restart, wait the same 10s, export again → note the new number
 
