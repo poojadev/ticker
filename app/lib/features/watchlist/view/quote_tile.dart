@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/theme.dart';
 import '../../../data/models/quote.dart';
+import 'rebuild_stats.dart';
 
 /// One row of the watchlist. Pure and cheap on its own — the problem in
 /// Episode 1 is not what it builds, it's how often it's asked to.
@@ -12,6 +13,9 @@ class QuoteTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Count every build for the AppBar's "rebuilds: N". Just an int++; the
+    // AppBar itself only updates after the frame.
+    RebuildStats.instance.recordRebuild();
     final color = quote.isUp ? TickerTheme.up : TickerTheme.down;
     final sign = quote.isUp ? '+' : '';
     return Container(

@@ -1,75 +1,95 @@
 import 'dart:convert';
 
-import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:waste_lens/waste_lens.dart';
 
 import '../../../app/di.dart';
-import '../../../app/theme.dart';
 import '../bloc/watchlist_bloc.dart';
-import 'quote_tile.dart';
+import 'optimized_watchlist.dart';
+import 'rebuild_stats.dart';
+import 'shipped_watchlist.dart';
 
+/// Two tabs over ONE WatchlistBloc: "Shipped" (Episode 1 bug) and
+/// "Optimized" (the fix). Same data, same ticks, so the comparison is fair.
 class WatchlistPage extends StatelessWidget {
   const WatchlistPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Provided ABOVE both tabs: switching tabs never reloads or resubscribes.
     return BlocProvider(
       create: (_) => getIt<WatchlistBloc>()..add(const WatchlistStarted()),
-      child: const _WatchlistView(),
+      child: const _WatchlistTabs(),
     );
   }
 }
 
-class _WatchlistView extends StatelessWidget {
-  const _WatchlistView();
+class _WatchlistTabs extends StatefulWidget {
+  const _WatchlistTabs();
+
+  @override
+  State<_WatchlistTabs> createState() => _WatchlistTabsState();
+}
+
+class _WatchlistTabsState extends State<_WatchlistTabs> {
+  int _tab = 0;
+
+  static const _probeLabels = [
+    ShippedWatchlist.probeLabel,
+    OptimizedWatchlist.probeLabel,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    RebuildStats.instance.track(_probeLabels[_tab]);
+  }
+
+  @override
+  void dispose() {
+    RebuildStats.instance.stop();
+    super.dispose();
+  }
+
+  void _selectTab(int tab) {
+    setState(() => _tab = tab);
+    // Fresh counters for the tab we just opened.
+    RebuildStats.instance.track(_probeLabels[tab]);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Watchlist'),
-        actions: const [_ExportReportButton()],
+        actions: const [
+          Center(child: RebuildCounter()),
+          _ExportReportButton(),
+        ],
       ),
-      // ─────────────────────────────────────────────────────────────────────
-      // EPISODE 1 — THE BUG
-      //
-      // This BlocBuilder listens to the WHOLE state. The state changes on every
-      // tick (2x per second), so the entire ListView — and every visible
-      // QuoteTile — rebuilds, even though only ~3 of 50 prices changed.
-      //
-      // Looks harmless. Works fine. waste_lens proves most of it is wasted.
-      // ─────────────────────────────────────────────────────────────────────
-      body: BlocBuilder<WatchlistBloc, WatchlistState>(
-        builder: (context, state) {
-          switch (state.status) {
-            case WatchlistStatus.initial:
-            case WatchlistStatus.loading:
-              return const Center(child: CircularProgressIndicator());
-            case WatchlistStatus.failure:
-              return _ErrorView(message: state.error ?? 'Something went wrong');
-            case WatchlistStatus.loaded:
-              return ListView.builder(
-                itemCount: state.symbols.length,
-                itemBuilder: (context, index) {
-                  final quote = state.quotes[state.symbols[index]]!;
-                  // The probe compares this tile's inputs with last time.
-                  // Same inputs + rebuilt anyway = a dead rebuild.
-                  return DeadRebuildProbe(
-                    label: 'QuoteTile',
-                    fingerprint: () => [quote],
-                    child: QuoteTile(quote: quote),
-                  );
-                },
-              );
-          }
-        },
+      // Only the visible tab exists. No IndexedStack: a hidden tab would keep
+      // rebuilding on every tick and pollute the counts.
+      body: _tab == 0 ? const ShippedWatchlist() : const OptimizedWatchlist(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: _selectTab,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.bug_report_outlined),
+            label: 'Shipped',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bolt_outlined),
+            label: 'Optimized',
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Dumps the waste_lens report to the console — the before/after numbers for
+/// Dumps the waste_lens report to the console: the before/after numbers for
 /// the end of each episode.
 class _ExportReportButton extends StatelessWidget {
   const _ExportReportButton();
@@ -86,44 +106,6 @@ class _ExportReportButton extends StatelessWidget {
           const SnackBar(content: Text('Waste report printed to console')),
         );
       },
-    );
-  }
-}
-
-class _ErrorView extends StatelessWidget {
-  const _ErrorView({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.cloud_off, size: 48, color: TickerTheme.muted),
-            const SizedBox(height: 12),
-            const Text(
-              'Can\'t reach the market server.\nIs `dart run bin/server.dart` running?',
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: TickerTheme.muted, fontSize: 12),
-            ),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () =>
-                  context.read<WatchlistBloc>().add(const WatchlistStarted()),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
