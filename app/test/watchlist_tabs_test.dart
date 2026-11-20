@@ -7,7 +7,9 @@ import 'package:ticker/app/di.dart';
 import 'package:ticker/data/models/quote.dart';
 import 'package:ticker/data/repository/market_repository.dart';
 import 'package:ticker/features/watchlist/bloc/watchlist_bloc.dart';
+import 'package:ticker/features/watchlist/view/optimized_watchlist.dart';
 import 'package:ticker/features/watchlist/view/rebuild_stats.dart';
+import 'package:ticker/features/watchlist/view/shipped_watchlist.dart';
 import 'package:ticker/features/watchlist/view/watchlist_page.dart';
 import 'package:waste_lens/waste_lens.dart';
 
@@ -40,7 +42,8 @@ void main() {
   Future<void> pumpTenTicks(WidgetTester tester, {required int round}) async {
     for (var i = 0; i < 10; i++) {
       final symbol = 'S${i % 3}'; // always a visible tile
-      ticks.add([Tick(symbol: symbol, price: 200.0 + round * 10 + i, changePct: 1)]);
+      ticks.add(
+          [Tick(symbol: symbol, price: 200.0 + round * 10 + i, changePct: 1)]);
       await tester.pump();
       await tester.pump();
     }
@@ -50,7 +53,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('optimized tab has 0 dead rebuilds, shipped tab has some',
+  testWidgets('"With fix" tab has 0 dead rebuilds, "With bug" tab has some',
       (tester) async {
     await tester.pumpWidget(
       const WasteLens(
@@ -62,7 +65,7 @@ void main() {
     await tester.pump(); // load -> loaded
     await tester.pump();
 
-    // ── Shipped (default tab) ──
+    // ── With bug (default tab) ──
     await pumpTenTicks(tester, round: 0);
     final shippedDead = RebuildStats.instance.dead;
     final shippedRebuilds = RebuildStats.instance.rebuilds;
@@ -72,8 +75,8 @@ void main() {
       findsOneWidget,
     );
 
-    // ── Optimized ──
-    await tester.tap(find.text('Optimized'));
+    // ── With fix ──
+    await tester.tap(find.text('With fix'));
     await tester.pump();
     await tester.pump();
     await pumpTenTicks(tester, round: 1);
@@ -82,5 +85,49 @@ void main() {
     expect(RebuildStats.instance.rebuilds, greaterThan(0));
     expect(find.textContaining('· dead: 0'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('waste report compares the two tabs', (tester) async {
+    await tester.pumpWidget(
+      const WasteLens(
+        config: WasteLensConfig.none(),
+        child: MaterialApp(home: WatchlistPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    // Before anything is measured on "With fix", its card says so.
+    await pumpTenTicks(tester, round: 0); // With bug
+    await tester.tap(find.byTooltip('Waste report'));
+    await tester.pumpAndSettle();
+    expect(find.text('Waste report'), findsOneWidget);
+    expect(find.textContaining('Not measured yet'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    // Measure "With fix" too, then compare.
+    await tester.tap(find.text('With fix'));
+    await tester.pump();
+    await tester.pump();
+    await pumpTenTicks(tester, round: 1);
+    await tester.tap(find.byTooltip('Waste report'));
+    await tester.pumpAndSettle();
+
+    // Both cards are filled in...
+    expect(find.text('dead rebuilds / 10 s'), findsNWidgets(2));
+    expect(find.textContaining('Not measured yet'), findsNothing);
+    // ...with each tab's own numbers, and the fix wasted nothing.
+    final bug = RebuildStats.instance.runFor(ShippedWatchlist.probeLabel)!;
+    final fix = RebuildStats.instance.runFor(OptimizedWatchlist.probeLabel)!;
+    expect(bug.dead, greaterThan(0));
+    expect(fix.dead, 0);
+    expect(find.textContaining('${bug.rebuilds} rebuilds\n${bug.dead} dead'),
+        findsOneWidget);
+    expect(find.textContaining('none of them are'), findsOneWidget);
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Waste report'), findsNothing);
   });
 }

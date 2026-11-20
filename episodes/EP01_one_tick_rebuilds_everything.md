@@ -1,7 +1,7 @@
 # Episode 1: "One price tick rebuilds your whole list"
 
 **Length:** ~1:45 · **Format:** 16:9, editor font 20pt+, app on the right, code on the left
-**Branch:** `shipped`. The app has two tabs: **Shipped** (the bug) and **Optimized** (the fix).
+**Branch:** `shipped`. The app has two tabs: **With bug** (`shipped_watchlist.dart`) and **With fix** (`optimized_watchlist.dart`).
 
 ---
 
@@ -92,13 +92,13 @@ row. The cost that matters is build, layout and paint, not the comparison.
 
 | Tab | rebuilds | dead |
 |---|---|---|
-| Shipped | **479** | **417** |
-| Optimized | **40** | **0** |
+| With bug | **479** | **417** |
+| With fix | **40** | **0** |
 
 How to read them:
-- **Shipped:** 40 ticks × ~12 built tiles ≈ 480 rebuilds, and 417 of them (87%) changed
+- **With bug:** 40 ticks × ~12 built tiles ≈ 480 rebuilds, and 417 of them (87%) changed
   nothing.
-- **Optimized:** ~12 first builds when the tab opens, plus ~28 tiles whose price really
+- **With fix:** ~12 first builds when the tab opens, plus ~28 tiles whose price really
   moved. None of them were dead.
 
 Your own take will land close to these, not exactly on them (tap timing, scroll position).
@@ -110,9 +110,9 @@ Read the AppBar on camera and say the numbers you see.
 
 1. `cd server && dart run bin/server.dart --hz 4` (a faster tick makes the flashing obvious)
 2. `cd app && flutter run` (**debug mode**: waste_lens is off in release)
-3. On **Shipped**, tap the tab again to reset the counter, wait 10 s, and note the AppBar numbers
-4. Tap **Optimized** (it resets on its own), wait 10 s, and note the numbers
-5. Optional: tap the report icon to print the full waste_lens report to the console
+3. On **With bug**, tap the tab again to reset the counter, wait 10 s, and note the AppBar numbers
+4. Tap **With fix** (it resets on its own), wait 10 s, then tap the report icon: the dialog compares both tabs side by side, scaled to "per 10 s"
+5. Optional: expand "Whole app since launch" in the dialog for the waste_lens totals (network, leaks, memory)
 
 Write the two pairs of numbers down. They become the hook and the thumbnail.
 
@@ -122,15 +122,15 @@ Write the two pairs of numbers down. They become the hook and the thumbnail.
 
 | Time | Screen | Voiceover |
 |---|---|---|
-| 0:00 | Shipped tab, tiles flashing amber | "Only three prices changed. Every amber flash is a tile Flutter rebuilt for nothing." |
+| 0:00 | With bug tab, tiles flashing amber | "Only three prices changed. Every amber flash is a tile Flutter rebuilt for nothing." |
 | 0:06 | Zoom on AppBar: `rebuilds: 479 · dead: 417` | "Ten seconds: 479 tile rebuilds, and 417 of them produced exactly the same pixels. That's 87% waste." |
 | 0:16 | waste_lens logo / pub.dev page | "This is waste_lens, a package I built. It doesn't just count rebuilds. It proves a rebuild changed nothing." |
 | 0:24 | `shipped_watchlist.dart`, highlight `BlocBuilder` | "The cause is one BlocBuilder around the whole list. New state on every tick means every tile rebuilds, four times a second." |
 | 0:38 | Highlight `DeadRebuildProbe` | "The probe compares each tile's inputs with last time. Same quote, rebuilt anyway: that's a dead rebuild." |
 | 0:50 | Both files side by side, highlight `buildWhen` | "Fix one: the list only rebuilds when the list changes, meaning status or symbols, not prices." |
 | 1:04 | Highlight `BlocSelector` | "Fix two: each tile selects just its own quote. Quote is Equatable, so if it didn't change, the tile is skipped." |
-| 1:18 | Tap Optimized, no amber | "Same bloc, same ticks. Only the tiles whose price actually moved rebuild." |
-| 1:26 | Zoom on AppBar: `rebuilds: 40 · dead: 0` | "Ten seconds: 40 rebuilds instead of 479, and zero dead." |
+| 1:18 | Tap With fix, no amber | "Same bloc, same ticks. Only the tiles whose price actually moved rebuild." |
+| 1:26 | Report dialog: With bug vs With fix cards | "Ten seconds: 40 rebuilds instead of 479, and zero dead." |
 | 1:36 | Outro card | "Next: why `const` wouldn't have saved you. Link to waste_lens below." |
 
 **Title options:** "One price tick rebuilds your whole Flutter list" ·

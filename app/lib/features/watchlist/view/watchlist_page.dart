@@ -1,17 +1,16 @@
-import 'dart:convert';
-
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:waste_lens/waste_lens.dart';
 
 import '../../../app/di.dart';
 import '../bloc/watchlist_bloc.dart';
 import 'optimized_watchlist.dart';
 import 'rebuild_stats.dart';
 import 'shipped_watchlist.dart';
+import 'waste_report_dialog.dart';
 
-/// Two tabs over ONE WatchlistBloc: "Shipped" (Episode 1 bug) and
-/// "Optimized" (the fix). Same data, same ticks, so the comparison is fair.
+/// Two tabs over ONE WatchlistBloc: "With bug" (ShippedWatchlist, Episode 1's
+/// bug) and "With fix" (OptimizedWatchlist). Same data, same ticks, so the
+/// comparison is fair.
 class WatchlistPage extends StatelessWidget {
   const WatchlistPage({super.key});
 
@@ -77,11 +76,13 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.bug_report_outlined),
-            label: 'Shipped',
+            selectedIcon: Icon(Icons.bug_report),
+            label: 'With bug',
           ),
           NavigationDestination(
-            icon: Icon(Icons.bolt_outlined),
-            label: 'Optimized',
+            icon: Icon(Icons.check_circle_outline),
+            selectedIcon: Icon(Icons.check_circle),
+            label: 'With fix',
           ),
         ],
       ),
@@ -89,23 +90,17 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
   }
 }
 
-/// Dumps the waste_lens report to the console: the before/after numbers for
-/// the end of each episode.
+/// Opens the waste_lens report in a dialog (and prints the raw JSON to the
+/// console): the before/after numbers for the end of each episode.
 class _ExportReportButton extends StatelessWidget {
   const _ExportReportButton();
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      tooltip: 'Export waste report',
+      tooltip: 'Waste report',
       icon: const Icon(Icons.receipt_long_outlined),
-      onPressed: () {
-        final report = WasteLens.exportReport();
-        debugPrint(const JsonEncoder.withIndent('  ').convert(report));
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Waste report printed to console')),
-        );
-      },
+      onPressed: () => showWasteReportDialog(context),
     );
   }
 }

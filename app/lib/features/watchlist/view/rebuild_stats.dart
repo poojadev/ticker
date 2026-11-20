@@ -4,12 +4,32 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:waste_lens/waste_lens.dart';
 
-/// Live numbers for the AppBar: how many times QuoteTile.build ran, and how
-/// many of those rebuilds waste_lens proved were dead, for the visible tab.
+/// One measurement on one tab: from the moment the tab opened until you left
+/// it (or until now, for the visible tab).
+class TabRun {
+  TabRun() : startedAt = DateTime.now();
+
+  final DateTime startedAt;
+  DateTime? endedAt;
+
+  /// Times QuoteTile.build ran.
+  int rebuilds = 0;
+
+  /// Rebuilds waste_lens proved were dead (same quote, same pixels).
+  int dead = 0;
+
+  Duration get duration => (endedAt ?? DateTime.now()).difference(startedAt);
+
+  /// Share of rebuilds that were wasted, 0..1.
+  double get wastedShare => rebuilds == 0 ? 0 : dead / rebuilds;
+}
+
+/// Live numbers for the visible tab, plus the last run of every tab so the
+/// waste report can compare "with bug" against "with fix".
 ///
-/// Both counters change WHILE Flutter is building (QuoteTile.build) or right
-/// after (the bus event). So we never notify listeners immediately: we wait
-/// for the frame to finish (addPostFrameCallback), then update the AppBar once.
+/// Counters change WHILE Flutter is building (QuoteTile.build) or right after
+/// (the bus event). So we never notify listeners immediately: we wait for the
+/// frame to finish (addPostFrameCallback), then update the AppBar once.
 /// That's the same "setState during build" trap waste_lens 0.1.1 fell into.
 class RebuildStats extends ChangeNotifier {
   RebuildStats._();
@@ -17,23 +37,33 @@ class RebuildStats extends ChangeNotifier {
   /// One shared instance, so QuoteTile can count without extra parameters.
   static final RebuildStats instance = RebuildStats._();
 
-  int rebuilds = 0;
-  int dead = 0;
+  /// Latest run per probe label ('QuoteTile · shipped', ...).
+  final Map<String, TabRun> _runs = {};
 
   String _label = '';
   StreamSubscription<DiagnosticEvent>? _deadEvents;
   bool _notifyScheduled = false;
 
-  /// Start counting for the tab whose DeadRebuildProbe uses [label].
-  /// Resets both counters.
+  TabRun? get _current => _runs[_label];
+
+  /// Visible tab's numbers, for the AppBar.
+  int get rebuilds => _current?.rebuilds ?? 0;
+  int get dead => _current?.dead ?? 0;
+
+  /// The latest run for the tab whose probe uses [label], or null if that tab
+  /// hasn't been opened yet.
+  TabRun? runFor(String label) => _runs[label];
+
+  /// Start a fresh measurement for the tab whose DeadRebuildProbe uses
+  /// [label]. The tab we're leaving keeps its numbers, frozen.
   void track(String label) {
+    _current?.endedAt = DateTime.now();
     _label = label;
-    rebuilds = 0;
-    dead = 0;
+    _runs[label] = TabRun();
     _deadEvents?.cancel();
     _deadEvents = WasteLens.current?.bus.stream.listen((event) {
       if (event is RebuildEvent && event.dead && event.widget == _label) {
-        dead++;
+        _current?.dead++;
         _notifyAfterFrame();
       }
     });
@@ -42,14 +72,16 @@ class RebuildStats extends ChangeNotifier {
 
   /// Called from QuoteTile.build. Just an int increment: cheap.
   void recordRebuild() {
-    rebuilds++;
+    _current?.rebuilds++;
     _notifyAfterFrame();
   }
 
-  /// Stop listening to waste_lens (the page is gone).
+  /// Stop listening to waste_lens and forget all runs (the page is gone).
   void stop() {
     _deadEvents?.cancel();
     _deadEvents = null;
+    _runs.clear();
+    _label = '';
   }
 
   /// Many changes in one frame -> one AppBar update, after that frame.
