@@ -18,6 +18,9 @@ class TabRun {
   /// Rebuilds waste_lens proved were dead (same quote, same pixels).
   int dead = 0;
 
+  /// Times MarketStatusBanner.build ran (Episode 2 tabs only).
+  int bannerBuilds = 0;
+
   Duration get duration => (endedAt ?? DateTime.now()).difference(startedAt);
 
   /// Share of rebuilds that were wasted, 0..1.
@@ -49,6 +52,7 @@ class RebuildStats extends ChangeNotifier {
   /// Visible tab's numbers, for the AppBar.
   int get rebuilds => _current?.rebuilds ?? 0;
   int get dead => _current?.dead ?? 0;
+  int get bannerBuilds => _current?.bannerBuilds ?? 0;
 
   /// The latest run for the tab whose probe uses [label], or null if that tab
   /// hasn't been opened yet.
@@ -76,6 +80,12 @@ class RebuildStats extends ChangeNotifier {
     _notifyAfterFrame();
   }
 
+  /// Called from MarketStatusBanner.build. Same idea: an int++.
+  void recordBannerBuild() {
+    _current?.bannerBuilds++;
+    _notifyAfterFrame();
+  }
+
   /// Stop listening to waste_lens and forget all runs (the page is gone).
   void stop() {
     _deadEvents?.cancel();
@@ -98,9 +108,12 @@ class RebuildStats extends ChangeNotifier {
   }
 }
 
-/// "rebuilds: N · dead: M" for the visible tab.
+/// "rebuilds: N · dead: M" for the visible tab. Episode 2 adds a second
+/// line, "banner: B", so the AppBar stays the same width as in Episode 1.
 class RebuildCounter extends StatelessWidget {
-  const RebuildCounter({super.key});
+  const RebuildCounter({super.key, this.showBanner = false});
+
+  final bool showBanner;
 
   @override
   Widget build(BuildContext context) {
@@ -108,10 +121,13 @@ class RebuildCounter extends StatelessWidget {
     return ListenableBuilder(
       listenable: stats,
       builder: (context, _) => Text(
-        'rebuilds: ${stats.rebuilds} · dead: ${stats.dead}',
-        style: const TextStyle(
-          fontSize: 13,
-          fontFeatures: [FontFeature.tabularFigures()],
+        'rebuilds: ${stats.rebuilds} · dead: ${stats.dead}'
+        '${showBanner ? '\nbanner: ${stats.bannerBuilds}' : ''}',
+        textAlign: TextAlign.right,
+        style: TextStyle(
+          fontSize: showBanner ? 12 : 13,
+          height: showBanner ? 1.25 : null,
+          fontFeatures: const [FontFeature.tabularFigures()],
         ),
       ),
     );

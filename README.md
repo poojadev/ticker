@@ -106,7 +106,7 @@ open-socket count shows stream leaks.
 
 ## Episodes
 1. [One price tick rebuilds your whole list](episodes/EP01_one_tick_rebuilds_everything.md)
-2. `const` isn't enough: why the tile still rebuilds
+2. [Why const didn't save us](episodes/EP02_why_const_didnt_save_us.md)
 3. Two widgets, same API call
 4. Pull-to-refresh + `initState` = duplicate fetch
 5. The stream you forgot to cancel
