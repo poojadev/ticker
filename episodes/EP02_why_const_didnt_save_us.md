@@ -66,14 +66,14 @@ From the waste report, scaled to 10 seconds:
 
 | Tab | QuoteTile rebuilds / 10 s | dead / 10 s | wasted | banner builds / 10 s |
 |---|---|---|---|---|
-| Before const | **441** | **365** | 83% | **41** |
-| After const | **423** | **374** | 88% | **1** |
+| Before const | **430** | **368** | 86% | **41** |
+| After const | **428** | **371** | 87% | **once** |
 
-Raw counts: Before 464 rebuilds, 384 dead, 43 banner builds in 10.5 s · After 440 rebuilds,
-389 dead, 1 banner build in 10.4 s.
+Raw counts, 10.1 s on each tab: Before 435 rebuilds, 372 dead, 41 banner builds · After 433
+rebuilds, 375 dead, 1 banner build.
 
-The report's own summary line: *"const didn't change the tiles (365 → 374 dead / 10 s), but
-the banner went from 41 builds to 1."*
+The report's own summary line: *"const didn't change the tiles (368 → 371 dead / 10 s), but
+the banner went from 41 builds / 10 s to a single build, when the tab opened."*
 
 How to read them:
 - **Tiles:** about 40 ticks × ~11 built tiles on both tabs. The small difference between
@@ -81,8 +81,8 @@ How to read them:
   *more*.
 - **Banner:** Before rebuilds it on every tick (~4 a second). After builds it **once**, when
   the tab opens, then never again.
-- About 5 s into each tab, the AppBar showed `rebuilds: 234 · dead: 195` on **both** tabs, with
-  `banner: 22` vs `banner: 1`. If you can catch that on camera, it's the cleanest
+- About 5 s into each tab, the AppBar showed `rebuilds: 238` on **both** tabs (dead 211 vs 209),
+  with `banner: 23` vs `banner: 1`. If you can catch that on camera, it's the cleanest
   before/after shot.
 
 Your own take will land close to these, not exactly on them (tap timing, scroll position).
@@ -132,9 +132,9 @@ thumbnail.
 | Time | Beat | Screen | Voiceover |
 |---|---|---|---|
 | 0:00 | **Hook** | Episode 1 comment: "Why not just make it const?" | "Last episode, half the comments said: just make it const. So let's do exactly that, and measure it." |
-| 0:12 | **Add const, nothing changes** | Before const tab, amber flashing → After const tab, still flashing. AppBar: `dead: 195` on both | "Before const: 195 dead rebuilds in five seconds. I add const everywhere the linter lets me. After const: 195. The tiles didn't notice." |
+| 0:12 | **Add const, nothing changes** | Before const tab, amber flashing → After const tab, still flashing. AppBar: `rebuilds: 238` on both | "Before const: 238 tile rebuilds in five seconds. I add const everywhere the linter lets me. After const: 238. The tiles didn't notice." |
 | 0:35 | **Why** | `Element.updateChild` snippet, highlight `child.widget == newWidget` | "When a parent rebuilds, Flutter asks one question per child: is this the exact same widget instance as last time? If yes, it skips it. A tile with a live price is a new instance every tick, and it can't be const, because the price isn't known at compile time." |
-| 1:00 | **The banner** | Banner badge: `built 22×` vs `built 1×`. Report: 41 → 1 | "Now look at this banner. It takes no arguments, so it can be const. Without const it's rebuilt every tick: 41 times in ten seconds. With const it's the same instance every time, so Flutter builds it once. Then never again." |
+| 1:00 | **The banner** | Banner badge: `built 23×` vs `built 1×`. Report: 41 → once | "Now look at this banner. It takes no arguments, so it can be const. Without const it's rebuilt every tick: 41 times in ten seconds. With const it's the same instance every time, so Flutter builds it once. Then never again." |
 | 1:25 | **The rule** | Split: `const MarketStatusBanner()` / Episode 1's `BlocSelector` | "So here's the rule. const is for things that don't change: use it everywhere you can. For live data, const can't help. You have to scope the rebuild, like we did in Episode 1. Next: two widgets, one API call." |
 
 **Title options:** "Why const didn't save my Flutter list" ·

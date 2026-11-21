@@ -73,6 +73,19 @@ Future<void> showWasteReportDialog(BuildContext context, {int episode = 1}) {
   );
 }
 
+/// Banner builds per 10 s. A banner built only once (when the tab opened)
+/// says "once": scaling one build to "0.8 / 10 s" would just confuse.
+String _bannerRate(_RunSnapshot run) {
+  if (run.banner <= 1) return run.banner == 0 ? '0' : 'once';
+  return _rate(run.per10s(run.banner));
+}
+
+/// The banner's count in words, for the summary line.
+String _bannerPhrase(_RunSnapshot run) {
+  if (run.banner == 1) return 'a single build, when the tab opened';
+  return '${_bannerRate(run)} builds / 10 s';
+}
+
 /// Per-10 s numbers: whole numbers from 10 up; below that, the nearest whole
 /// number if it's close (0.99 -> "1"), else one decimal (0.3 -> "0.3").
 String _rate(double v) {
@@ -286,8 +299,7 @@ class _TabCard extends StatelessWidget {
             const SizedBox(height: 12),
             _StatLine('Rebuilds / 10 s', _rate(run.per10s(run.rebuilds))),
             _StatLine('Wasted', '${run.wastedPercent}%'),
-            if (showBanner)
-              _StatLine('Banner / 10 s', _rate(run.per10s(run.banner))),
+            if (showBanner) _StatLine('Banner / 10 s', _bannerRate(run)),
             const Divider(height: 16),
             // The raw counts behind the "/ 10 s" numbers above.
             Text(
@@ -387,10 +399,8 @@ class _ConstVerdict extends StatelessWidget {
     } else {
       final deadB = _rate(b.per10s(b.dead));
       final deadA = _rate(a.per10s(a.dead));
-      final bannerB = _rate(b.per10s(b.banner));
-      final bannerA = _rate(a.per10s(a.banner));
       message = "const didn't change the tiles ($deadB → $deadA dead / 10 s), "
-          'but the banner went from $bannerB builds to $bannerA.';
+          'but the banner went from ${_bannerPhrase(b)} to ${_bannerPhrase(a)}.';
     }
     return Container(
       padding: const EdgeInsets.all(12),
