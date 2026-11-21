@@ -5,25 +5,56 @@ import 'package:material_ui/material_ui.dart';
 import 'package:waste_lens/waste_lens.dart';
 
 import '../../../app/theme.dart';
+import 'ep2_after_const.dart';
+import 'ep2_before_const.dart';
 import 'optimized_watchlist.dart';
 import 'rebuild_stats.dart';
 import 'shipped_watchlist.dart';
 
 const _bugColor = Color(0xFFE0A52E); // same amber as the dead-rebuild flash
 const _fixColor = TickerTheme.up;
+const _constColor = Color(0xFF58A6FF); // Ep 2 "after": changed, not fixed
 
-/// Opens the waste report: "With bug" vs "With fix" side by side, plus the
+/// How one side of the comparison is labelled and coloured.
+class _Side {
+  const _Side(this.title, this.icon, this.color, this.probeLabel, this.jsonKey);
+
+  final String title;
+  final IconData icon;
+  final Color color;
+  final String probeLabel;
+  final String jsonKey;
+}
+
+const _sides = {
+  1: (
+    _Side('With bug', Icons.bug_report, _bugColor, ShippedWatchlist.probeLabel,
+        'withBug'),
+    _Side('With fix', Icons.check_circle, _fixColor,
+        OptimizedWatchlist.probeLabel, 'withFix'),
+  ),
+  2: (
+    _Side('Before const', Icons.remove_circle, _bugColor,
+        Ep2BeforeConst.probeLabel, 'beforeConst'),
+    _Side('After const', Icons.push_pin, _constColor, Ep2AfterConst.probeLabel,
+        'afterConst'),
+  ),
+};
+
+/// Opens the waste report for [episode]: its two tabs side by side, plus the
 /// app-wide waste_lens totals. Also prints the raw JSON to the console.
-Future<void> showWasteReportDialog(BuildContext context) {
+Future<void> showWasteReportDialog(BuildContext context, {int episode = 1}) {
   final stats = RebuildStats.instance;
+  final (leftSide, rightSide) = _sides[episode]!;
   // Freeze the numbers now: the visible tab keeps ticking under the dialog.
-  final withBug = _RunSnapshot.of(stats.runFor(ShippedWatchlist.probeLabel));
-  final withFix = _RunSnapshot.of(stats.runFor(OptimizedWatchlist.probeLabel));
+  final left = _RunSnapshot.of(stats.runFor(leftSide.probeLabel));
+  final right = _RunSnapshot.of(stats.runFor(rightSide.probeLabel));
   final waste = WasteLens.exportReport();
 
   final json = <String, Object?>{
-    'withBug': withBug?.toJson(),
-    'withFix': withFix?.toJson(),
+    'episode': episode,
+    leftSide.jsonKey: left?.toJson(),
+    rightSide.jsonKey: right?.toJson(),
     'wasteLens': waste,
   };
   debugPrint(const JsonEncoder.withIndent('  ').convert(json));
@@ -31,23 +62,35 @@ Future<void> showWasteReportDialog(BuildContext context) {
   return showDialog<void>(
     context: context,
     builder: (_) => _WasteReportDialog(
-      withBug: withBug,
-      withFix: withFix,
+      episode: episode,
+      leftSide: leftSide,
+      rightSide: rightSide,
+      left: left,
+      right: right,
       wasteLens: waste,
       json: json,
     ),
   );
 }
 
+/// Per-10 s numbers: whole numbers from 10 up; below that, the nearest whole
+/// number if it's close (0.99 -> "1"), else one decimal (0.3 -> "0.3").
+String _rate(double v) {
+  if (v >= 10 || (v - v.round()).abs() < 0.15) return v.round().toString();
+  return v.toStringAsFixed(1);
+}
+
 /// One tab's numbers, frozen at the moment the report opened.
 class _RunSnapshot {
-  const _RunSnapshot(this.rebuilds, this.dead, this.duration);
+  const _RunSnapshot(this.rebuilds, this.dead, this.banner, this.duration);
 
-  static _RunSnapshot? of(TabRun? run) =>
-      run == null ? null : _RunSnapshot(run.rebuilds, run.dead, run.duration);
+  static _RunSnapshot? of(TabRun? run) => run == null
+      ? null
+      : _RunSnapshot(run.rebuilds, run.dead, run.bannerBuilds, run.duration);
 
   final int rebuilds;
   final int dead;
+  final int banner;
   final Duration duration;
 
   double get seconds => duration.inMilliseconds / 1000;
@@ -61,6 +104,7 @@ class _RunSnapshot {
   Map<String, Object?> toJson() => {
         'rebuilds': rebuilds,
         'dead': dead,
+        'bannerBuilds': banner,
         'seconds': double.parse(seconds.toStringAsFixed(1)),
         'wastedPercent': wastedPercent,
       };
@@ -68,14 +112,20 @@ class _RunSnapshot {
 
 class _WasteReportDialog extends StatelessWidget {
   const _WasteReportDialog({
-    required this.withBug,
-    required this.withFix,
+    required this.episode,
+    required this.leftSide,
+    required this.rightSide,
+    required this.left,
+    required this.right,
     required this.wasteLens,
     required this.json,
   });
 
-  final _RunSnapshot? withBug;
-  final _RunSnapshot? withFix;
+  final int episode;
+  final _Side leftSide;
+  final _Side rightSide;
+  final _RunSnapshot? left;
+  final _RunSnapshot? right;
   final Map<String, Object?> wasteLens;
   final Map<String, Object?> json;
 
@@ -96,36 +146,37 @@ class _WasteReportDialog extends StatelessWidget {
                 shrinkWrap: true,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
                 children: [
-                  // 1. The comparison: the whole point of Episode 1.
+                  // 1. The comparison: the whole point of the episode.
                   IntrinsicHeight(
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Expanded(
                           child: _TabCard(
-                            title: 'With bug',
-                            icon: Icons.bug_report,
-                            color: _bugColor,
-                            run: withBug,
+                            side: leftSide,
+                            run: left,
+                            showBanner: episode == 2,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: _TabCard(
-                            title: 'With fix',
-                            icon: Icons.check_circle,
-                            color: _fixColor,
-                            run: withFix,
+                            side: rightSide,
+                            run: right,
+                            showBanner: episode == 2,
                           ),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 12),
-                  _Verdict(withBug: withBug, withFix: withFix),
+                  if (episode == 2)
+                    _ConstVerdict(before: left, after: right)
+                  else
+                    _Verdict(withBug: left, withFix: right),
                   const SizedBox(height: 20),
                   // 2. What the numbers mean, in one line each.
-                  const _Glossary(),
+                  _Glossary(showBanner: episode == 2),
                   const SizedBox(height: 8),
                   // 3. Everything else waste_lens knows, folded away.
                   _AppTotals(report: wasteLens),
@@ -181,20 +232,21 @@ class _Header extends StatelessWidget {
 /// One tab's card: the dead-rebuild count big, the details underneath.
 class _TabCard extends StatelessWidget {
   const _TabCard({
-    required this.title,
-    required this.icon,
-    required this.color,
+    required this.side,
     required this.run,
+    this.showBanner = false,
   });
 
-  final String title;
-  final IconData icon;
-  final Color color;
+  final _Side side;
   final _RunSnapshot? run;
+
+  /// Episode 2 also shows how often MarketStatusBanner was built.
+  final bool showBanner;
 
   @override
   Widget build(BuildContext context) {
     final run = this.run;
+    final color = side.color;
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -207,10 +259,10 @@ class _TabCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(icon, color: color, size: 18),
+              Icon(side.icon, color: color, size: 18),
               const SizedBox(width: 6),
               Text(
-                title,
+                side.title,
                 style: TextStyle(color: color, fontWeight: FontWeight.w700),
               ),
             ],
@@ -232,14 +284,17 @@ class _TabCard extends StatelessWidget {
               style: TextStyle(color: TickerTheme.muted, fontSize: 12),
             ),
             const SizedBox(height: 12),
-            _StatLine('Rebuilds / 10 s', run.per10s(run.rebuilds).round()),
-            _StatLine('Wasted', run.wastedPercent, suffix: '%'),
+            _StatLine('Rebuilds / 10 s', _rate(run.per10s(run.rebuilds))),
+            _StatLine('Wasted', '${run.wastedPercent}%'),
+            if (showBanner)
+              _StatLine('Banner / 10 s', _rate(run.per10s(run.banner))),
             const Divider(height: 16),
             // The raw counts behind the "/ 10 s" numbers above.
             Text(
               'Measured ${run.seconds.toStringAsFixed(1)} s\n'
               '${run.rebuilds} rebuilds\n'
-              '${run.dead} dead',
+              '${run.dead} dead'
+              '${showBanner ? '\n${run.banner} banner build${run.banner == 1 ? '' : 's'}' : ''}',
               style: TickerTheme.numbers.copyWith(
                 color: TickerTheme.muted,
                 fontSize: 11,
@@ -254,11 +309,10 @@ class _TabCard extends StatelessWidget {
 }
 
 class _StatLine extends StatelessWidget {
-  const _StatLine(this.label, this.value, {this.suffix = ''});
+  const _StatLine(this.label, this.value);
 
   final String label;
-  final int value;
-  final String suffix;
+  final String value;
 
   @override
   Widget build(BuildContext context) {
@@ -269,8 +323,7 @@ class _StatLine extends StatelessWidget {
           Expanded(
             child: Text(label, style: const TextStyle(fontSize: 13)),
           ),
-          Text('$value$suffix',
-              style: TickerTheme.numbers.copyWith(fontSize: 13)),
+          Text(value, style: TickerTheme.numbers.copyWith(fontSize: 13)),
         ],
       ),
     );
@@ -316,12 +369,54 @@ class _Verdict extends StatelessWidget {
   }
 }
 
-class _Glossary extends StatelessWidget {
-  const _Glossary();
+/// Episode 2's summary: const didn't change the tiles, but it did change the
+/// banner. Stated in plain words with this run's numbers.
+class _ConstVerdict extends StatelessWidget {
+  const _ConstVerdict({required this.before, required this.after});
+
+  final _RunSnapshot? before;
+  final _RunSnapshot? after;
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
+    final b = before;
+    final a = after;
+    final String message;
+    if (b == null || a == null) {
+      message = 'Open both tabs for ~10 seconds each to compare them.';
+    } else {
+      final deadB = _rate(b.per10s(b.dead));
+      final deadA = _rate(a.per10s(a.dead));
+      final bannerB = _rate(b.per10s(b.banner));
+      final bannerA = _rate(a.per10s(a.banner));
+      message = "const didn't change the tiles ($deadB → $deadA dead / 10 s), "
+          'but the banner went from $bannerB builds to $bannerA.';
+    }
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _constColor.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.insights, color: _constColor, size: 20),
+          const SizedBox(width: 10),
+          Expanded(child: Text(message, style: const TextStyle(fontSize: 13))),
+        ],
+      ),
+    );
+  }
+}
+
+class _Glossary extends StatelessWidget {
+  const _Glossary({this.showBanner = false});
+
+  final bool showBanner;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _SectionTitle('What the numbers mean'),
@@ -344,6 +439,12 @@ class _Glossary extends StatelessWidget {
           'Tabs are open for different lengths of time, so counts are scaled '
               'to 10 seconds to compare them fairly.',
         ),
+        if (showBanner)
+          const _Explain(
+            'Banner builds',
+            'How many times MarketStatusBanner.build ran. A const banner is '
+                'the same instance every time, so Flutter skips it.',
+          ),
       ],
     );
   }
