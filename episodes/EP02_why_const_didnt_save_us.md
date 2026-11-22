@@ -8,7 +8,7 @@
 
 ## 1. Understand it first (read this before recording)
 
-**The question from Episode 1's comments:** "Why not just make QuoteTile `const`?"
+**The question many viewers will have after Episode 1:** "Why not just make QuoteTile `const`?"
 
 **The rule Flutter actually follows:** when a parent rebuilds, Flutter walks its new
 children and calls `Element.updateChild(child, newWidget, slot)` for each one. The first
@@ -131,11 +131,11 @@ thumbnail.
 
 | Time | Beat | Screen | Voiceover |
 |---|---|---|---|
-| 0:00 | **Hook** | Episode 1 comment: "Why not just make it const?" | "Last episode, half the comments said: just make it const. So let's do exactly that, and measure it." |
+| 0:00 | **Hook** | Card: "Why not just make it const?" | "After Episode 1, many of you may think: why not just make it const? So let's do exactly that, and measure it." |
 | 0:12 | **Add const, nothing changes** | Before const tab, amber flashing → After const tab, still flashing. AppBar: `rebuilds: 238` on both | "Before const: 238 tile rebuilds in five seconds. I add const everywhere the linter lets me. After const: 238. The tiles didn't notice." |
 | 0:35 | **Why** | `Element.updateChild` snippet, highlight `child.widget == newWidget` | "When a parent rebuilds, Flutter asks one question per child: is this the exact same widget instance as last time? If yes, it skips it. A tile with a live price is a new instance every tick, and it can't be const, because the price isn't known at compile time." |
 | 1:00 | **The banner** | Banner badge: `built 23×` vs `built 1×`. Report: 41 → once | "Now look at this banner. It takes no arguments, so it can be const. Without const it's rebuilt every tick: 41 times in ten seconds. With const it's the same instance every time, so Flutter builds it once. Then never again." |
-| 1:25 | **The rule** | Split: `const MarketStatusBanner()` / Episode 1's `BlocSelector` | "So here's the rule. const is for things that don't change: use it everywhere you can. For live data, const can't help. You have to scope the rebuild, like we did in Episode 1. Next: two widgets, one API call." |
+| 1:25 | **The rule** | Split: `const MarketStatusBanner()` / Episode 1's `BlocSelector` | "So here's the rule. const is for things that don't change: use it everywhere you can. For live data, const can't help. You have to scope the rebuild, like we did in Episode 1. Next: why my screen calls the same API twice." |
 
 **Title options:** "Why const didn't save my Flutter list" ·
 "I added const everywhere. Nothing changed. Here's why."

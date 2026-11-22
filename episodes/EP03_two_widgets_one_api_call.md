@@ -1,4 +1,4 @@
-# Episode 3: "Two widgets, one API call, double the requests"
+# Episode 3: "Why my Flutter screen calls the same API twice"
 
 **Length:** ~2:00 · **Format:** 16:9, editor font 20pt+, app on the right, code on the left
 **Branch:** `ep03-dup-calls`. Pick **Ep 3 · calls** at the top of the app. Tap any stock to open
@@ -188,7 +188,7 @@ cubit, or one `Future` created once in the page's state and passed down) fixes b
 | 1:35 | **The numbers** | Report: 20 / 20 · 20 / 10 · 10 / 10 | "Ten opens. With the bug: twenty requests, twenty hit the server. With coalescing: still twenty asked, ten got through. With the fix: ten. Done." |
 | 1:50 | **The rule + teaser** | Outro card | "If two widgets need the same data, give it one owner. And next time: pull-to-refresh plus initState, and the duplicate fetch hiding in almost every app." |
 
-**Title options:** "Two widgets, one API call, double the requests" ·
+**Title options:** "Why my Flutter screen calls the same API twice" ·
 "My Flutter screen called the API twice and I never wrote that"
 
 **Description links:** pub.dev/packages/waste_lens · pub.dev/packages/waste_lens_dio ·
