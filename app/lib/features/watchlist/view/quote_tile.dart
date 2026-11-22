@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/theme.dart';
 import '../../../data/models/quote.dart';
+import '../../quote_detail/open_quote_detail.dart';
 import 'rebuild_stats.dart';
 
 /// One row of the watchlist. Pure and cheap on its own — the problem in
@@ -18,7 +19,7 @@ class QuoteTile extends StatelessWidget {
     RebuildStats.instance.recordRebuild();
     final color = quote.isUp ? TickerTheme.up : TickerTheme.down;
     final sign = quote.isUp ? '+' : '';
-    return Container(
+    final tile = Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -75,6 +76,12 @@ class QuoteTile extends StatelessWidget {
           ),
         ],
       ),
+    );
+    // Tap a tile to open its detail screen (Episode 3).
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => openQuoteDetail(context, quote.symbol),
+      child: tile,
     );
   }
 }

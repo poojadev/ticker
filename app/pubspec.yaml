@@ -19,8 +19,8 @@ dependencies:
   get_it: ^8.0.3
   dio: ^5.9.2
   web_socket_channel: ^3.0.3
-  waste_lens: ^0.1.1
-  waste_lens_dio: ^0.1.0
+  waste_lens: ^0.2.0
+  waste_lens_dio: ^0.1.1
 
 dev_dependencies:
   flutter_test:

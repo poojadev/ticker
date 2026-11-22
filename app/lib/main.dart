@@ -16,13 +16,7 @@ void main() {
         rebuilds: true,
         leaks: true,
         memory: true,
-        // Off for now: in waste_lens 0.1.1 the overlay is notified while
-        // Flutter is still building, so every dead rebuild throws
-        // "setState() or markNeedsBuild() called during build" in the
-        // console. Fixed in 0.1.2. Turn this back on after upgrading.
-        // DeadRebuildProbe still flashes tiles amber, and the report
-        // button still prints the dead-rebuild count.
-        overlay: false,
+        overlay: true,
       ),
       child: TickerApp(),
     ),

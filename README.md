@@ -107,7 +107,7 @@ open-socket count shows stream leaks.
 ## Episodes
 1. [One price tick rebuilds your whole list](episodes/EP01_one_tick_rebuilds_everything.md)
 2. [Why const didn't save us](episodes/EP02_why_const_didnt_save_us.md)
-3. Two widgets, same API call
+3. [Two widgets, one API call, double the requests](episodes/EP03_two_widgets_one_api_call.md)
 4. Pull-to-refresh + `initState` = duplicate fetch
 5. The stream you forgot to cancel
 6. The AnimationController leak that shows up on the 10th navigation

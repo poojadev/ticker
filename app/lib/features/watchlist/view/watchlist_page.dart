@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../../app/di.dart';
+import '../../../app/quote_call_stats.dart';
+import '../../quote_detail/open_quote_detail.dart';
 import '../bloc/watchlist_bloc.dart';
 import 'ep2_after_const.dart';
 import 'ep2_before_const.dart';
@@ -43,7 +45,28 @@ const _episodes = [
     _Tab('After const', Icons.push_pin_outlined, Icons.push_pin,
         Ep2AfterConst.probeLabel, Ep2AfterConst()),
   ]),
+  // Episode 3: Episode 1's fixed list. The tabs differ in which DETAIL page a
+  // tapped tile opens: two widgets fetching the quote, or one shared cubit.
+  _Episode([
+    _Tab(
+        'With bug',
+        Icons.bug_report_outlined,
+        Icons.bug_report,
+        'ep3 bug',
+        DetailVariantScope(
+            variant: DetailVariant.bug, child: OptimizedWatchlist())),
+    _Tab(
+        'With fix',
+        Icons.check_circle_outline,
+        Icons.check_circle,
+        'ep3 fix',
+        DetailVariantScope(
+            variant: DetailVariant.fix, child: OptimizedWatchlist())),
+  ]),
 ];
+
+/// Episode 3 counts network requests instead of rebuilds.
+const _ep3 = 2;
 
 /// The watchlist with an episode picker. Every tab of every episode shares ONE
 /// WatchlistBloc: same data, same ticks, so the comparisons are fair.
@@ -76,7 +99,13 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
   @override
   void initState() {
     super.initState();
+    _track();
+  }
+
+  /// Fresh counters for the tab that's now visible.
+  void _track() {
     RebuildStats.instance.track(_current.probeLabel);
+    if (_episode == _ep3) getIt<QuoteCallStats>().track(_current.probeLabel);
   }
 
   @override
@@ -90,8 +119,7 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
       _episode = episode ?? _episode;
       _tab = tab;
     });
-    // Fresh counters for the tab we just opened.
-    RebuildStats.instance.track(_current.probeLabel);
+    _track();
   }
 
   @override
@@ -101,7 +129,11 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
       appBar: AppBar(
         title: const Text('Watchlist'),
         actions: [
-          Center(child: RebuildCounter(showBanner: isEp2)),
+          Center(
+            child: _episode == _ep3
+                ? RequestCounter(stats: getIt<QuoteCallStats>())
+                : RebuildCounter(showBanner: isEp2),
+          ),
           _ExportReportButton(episode: _episode + 1),
         ],
         bottom: PreferredSize(
@@ -134,7 +166,7 @@ class _WatchlistTabsState extends State<_WatchlistTabs> {
   }
 }
 
-/// "Ep 1" / "Ep 2" segmented control under the AppBar title.
+/// "Ep 1" / "Ep 2" / "Ep 3" segmented control under the AppBar title.
 class _EpisodePicker extends StatelessWidget {
   const _EpisodePicker({required this.episode, required this.onChanged});
 
@@ -150,8 +182,9 @@ class _EpisodePicker extends StatelessWidget {
         showSelectedIcon: false,
         style: const ButtonStyle(visualDensity: VisualDensity.compact),
         segments: const [
-          ButtonSegment(value: 0, label: Text('Ep 1 · One tick')),
+          ButtonSegment(value: 0, label: Text('Ep 1 · tick')),
           ButtonSegment(value: 1, label: Text('Ep 2 · const')),
+          ButtonSegment(value: 2, label: Text('Ep 3 · calls')),
         ],
         selected: {episode},
         onSelectionChanged: (selection) => onChanged(selection.first),

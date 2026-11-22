@@ -6,6 +6,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../../app/theme.dart';
 import '../../../data/models/quote.dart';
+import '../../quote_detail/open_quote_detail.dart';
 import 'rebuild_stats.dart';
 
 /// Same pixels as QuoteTile, but no `const` anywhere inside build().
@@ -20,7 +21,7 @@ class QuoteTileNoConst extends StatelessWidget {
     RebuildStats.instance.recordRebuild();
     final color = quote.isUp ? TickerTheme.up : TickerTheme.down;
     final sign = quote.isUp ? '+' : '';
-    return Container(
+    final tile = Container(
       margin: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -76,6 +77,12 @@ class QuoteTileNoConst extends StatelessWidget {
           ),
         ],
       ),
+    );
+    // Tap a tile to open its detail screen (Episode 3).
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => openQuoteDetail(context, quote.symbol),
+      child: tile,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../models/quote.dart';
+import '../models/quote_detail.dart';
 
 /// Thin REST client for the mock market server.
 class MarketApi {
@@ -21,9 +22,10 @@ class MarketApi {
     ];
   }
 
-  /// A single quote. (Later episodes: watch how often this gets called.)
-  Future<Quote> fetchQuote(String symbol) async {
+  /// One quote with its day stats: GET /quote/{symbol}.
+  /// (Episode 3: watch how often this gets called.)
+  Future<QuoteDetail> fetchQuote(String symbol) async {
     final res = await _dio.get<Map<String, dynamic>>('/quote/$symbol');
-    return Quote.fromJson(res.data!);
+    return QuoteDetail.fromJson(res.data!);
   }
 }

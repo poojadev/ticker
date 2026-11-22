@@ -7,6 +7,7 @@ import 'package:waste_lens/waste_lens.dart';
 import '../../../app/theme.dart';
 import 'ep2_after_const.dart';
 import 'ep2_before_const.dart';
+import 'ep3_report_dialog.dart';
 import 'optimized_watchlist.dart';
 import 'rebuild_stats.dart';
 import 'shipped_watchlist.dart';
@@ -44,6 +45,7 @@ const _sides = {
 /// Opens the waste report for [episode]: its two tabs side by side, plus the
 /// app-wide waste_lens totals. Also prints the raw JSON to the console.
 Future<void> showWasteReportDialog(BuildContext context, {int episode = 1}) {
+  if (episode == 3) return showEp3ReportDialog(context);
   final stats = RebuildStats.instance;
   final (leftSide, rightSide) = _sides[episode]!;
   // Freeze the numbers now: the visible tab keeps ticking under the dialog.
